@@ -1,0 +1,38 @@
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 50px;
+}
+
+#app {
+    max-width: 400px;
+    margin: auto;
+}
+
+h1 {
+    color: #333;
+}
+
+.correct {
+    color: green;
+}
+
+#container {
+    position: relative;
+}
+
+#sequence, #userInput {
+    display: block;
+    font-size: 30px;
+}
+
+#timer {
+    margin-top: 10px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+#wpmResult, #sequence, #userInput, #timer {
+    padding: 10px;
+}
+
+
