@@ -1,6 +1,6 @@
 const DIGITS_IN_WORD = 10;
 const MAX_NUMBER = 1e4;
-const MODEL_INPUTS = 4;
+const NUM_OF_INPUTS = 4;
 var TIMER_DURATION_SECONDS = 60;
 var USER_INPUT = document.getElementById("userInput");
 var SEQUENCE = document.getElementById('sequence');
@@ -21,16 +21,38 @@ var modelWeights = loadModel();
 var wordNumber = 0;
 var totalDigits = 0;
 
+
+function updateModelWeigths(duration){
+    const LEARNING_RATE = 0.2;
+    var modelInputs = calculateModelInputs(digitSequence, currentDigitIndex);
+    var prediction = modelPredict(modelInputs);
+    
+    if(prediction == Infinity) return;
+
+    var sumWeights = 0;
+    for(let i = 0; i <  NUM_OF_INPUTS; ++i){
+        modelWeights[i] += LEARNING_RATE * (duration - prediction) * modelInputs[i];
+        if(!modelWeights[i] || modelWeights[i] == null){
+            console.log(duration);
+            console.log(prediction);
+            console.log(modelInputs[i]);
+        }
+        sumWeights += modelWeights[i];
+    }
+    
+    modelWeights[NUM_OF_INPUTS] += LEARNING_RATE * (duration - prediction); // bias
+    
+}
+
 function updateStats(duration){
     const LEARNING_RATE = 0.05;
     var s = "";
-    var minx = Math.max(0, currentDigitIndex - MODEL_INPUTS + 1);
+    var minx = Math.max(0, currentDigitIndex - NUM_OF_INPUTS + 1);
     for (let i = currentDigitIndex; i>= minx; --i){
         s = digitSequence[i] + s;
         if (!digitStats[s]) digitStats[s] = duration;
         else digitStats[s] = (1 - LEARNING_RATE) * digitStats[s] + LEARNING_RATE * duration;
     }
-    // TODO: Dodac uczenie wag (wspolczynnikow w sieci)
 }
 
 function writeAnswer(event) {
@@ -50,7 +72,10 @@ function writeAnswer(event) {
 
             } else {
                 const last_elapsed = (new Date() - lastDigitWrited) / 1000;
-                if(STATS_UPDATING)updateStats(last_elapsed);
+                if(STATS_UPDATING){
+                    updateStats(last_elapsed);
+                    updateModelWeigths(last_elapsed);
+                }
                 const elapsed = (new Date() - roundStarted) / 1000;
                 const wpm = 60 * totalDigits / 5 / elapsed;
                 WPM_RESULT.innerText = (wpm.toFixed(0) + ' WPM\n');
@@ -74,39 +99,54 @@ function saveStats(){
     localStorage.setItem('digitStats', JSON.stringify(digitStats));
 }
 function loadModel(){
-    return [0.4, 0.3, 0.2, 0.1];
+    const savedModelWeights = localStorage.getItem('modelWeights');
+    return savedModelWeights ? JSON.parse(savedModelWeights) : [0.4, 0.3, 0.2, 0.1, 0];
+}
+function saveModel() {
+    localStorage.setItem('modelWeights', JSON.stringify(modelWeights));
 }
 
-function predictTimes(digits, pos){
+function calculateModelInputs(digits, pos){
+    var modelInputs = [];
+    for(let i = 0; i < NUM_OF_INPUTS; ++i){
+        modelInputs.push(null);
+    }
+    var s = "";
+    var minx = Math.max(0, pos - NUM_OF_INPUTS + 1);
+    for (let i = pos; i>= minx; --i){
+        s = digits[i] + s;
+        if (digitStats[s]) modelInputs[pos-i] = digitStats[s];
+    }
+    return modelInputs;
+}
+
+function modelPredict(modelInputs){
+    var prediction = 0;
+    var sumWeights = 0;
+    for (let i=0; i< NUM_OF_INPUTS; ++i){
+        if(modelInputs[i]){
+            prediction += modelWeights[i] * modelInputs[i];
+            sumWeights += modelWeights[i];
+        }
+    }
+    prediction += modelWeights[NUM_OF_INPUTS]; // bias
+
+    if(sumWeights > 0){
+        prediction /= sumWeights; 
+    }
+    else{
+        prediction = Infinity;
+    }
+    return prediction;
+}
+
+function getPredictedTimes(digits, pos){
     var predictions = [];
 
     for (var nextDigit = 0; nextDigit < 10; ++ nextDigit){
         digits[pos] = nextDigit;
-        var averages = [];
-        for(let i = 0; i < MODEL_INPUTS; ++i){
-            averages.push(null);
-        }
-        var s = "";
-        var minx = Math.max(0, pos - MODEL_INPUTS + 1);
-        for (let i = pos; i>= minx; --i){
-            s = digits[i] + s;
-            if (digitStats[s]) averages[pos-i] = digitStats[s];
-        }
-        var prediction = 0;
-        var sumWeights = 0;
-        for (let i=0; i<MODEL_INPUTS; ++i){
-            if(averages[i]){
-                prediction += modelWeights[i] * averages[i];
-                sumWeights += modelWeights[i];
-            }
-        }
-        if(sumWeights > 0){
-            prediction /= sumWeights; 
-        }
-        else{
-            prediction = Infinity;
-        }
-        
+        var modelInputs = calculateModelInputs(digits, pos);
+        var prediction = modelPredict(modelInputs); 
         predictions.push({digit: nextDigit, time: prediction});
     }
 
@@ -131,7 +171,7 @@ function generateDigitSequence() {
     }
     else{
         for(let i = 0; i < DIGITS_IN_WORD; ++i){
-            var predictions = predictTimes(digits, i);
+            var predictions = getPredictedTimes(digits, i);
             var randomIndex = Math.floor(Math.sqrt(Math.floor(Math.random() * 100)))
             var digit = predictions[randomIndex].digit;
             digits[i] = digit;
@@ -181,9 +221,12 @@ function startTimer() {
         } else {
             stopTimer();
             wordNumber = 0;
-            //alert('Czas minął!');
-            saveStats();
-            //document.location.reload();
+            alert('End of time!');
+            
+            if(STATS_UPDATING){
+                saveStats();
+                saveModel();
+            }
         }
     }, 1000);
 }
