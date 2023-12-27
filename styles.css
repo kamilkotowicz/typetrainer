@@ -31,7 +31,7 @@ h1 {
     font-weight: bold;
 }
 
-#wpmResult, #sequence, #userInput, #timer {
+#wpmResult, #sequence, #userInput, #timer, #options {
     padding: 10px;
 }
 

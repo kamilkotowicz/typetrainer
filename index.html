@@ -7,7 +7,13 @@
     <title>Digit Typing Trainer</title>
 </head>
 <body>
-    <h1>Szybkie wpisywanie cyfr</h1>
+    <h1>Fast digit typing</h1>
+    <div id="options">
+        <input type="checkbox" id="generatingModeCheckbox" onchange="toggleGeneratingMode()" checked>
+        <label for="generatingModeCheckbox">Allow smart generating</label>
+        <input type="checkbox" id="statsUpdateCheckbox" onchange="toggleStatsUpdate()" checked>
+        <label for="statsUpdateCheckbox">Allow updating statistics and model</label>
+      </div>
     <div id="timeOptions">
         <button onclick="setTimer(15)">15 sekund</button>
         <button onclick="setTimer(30)">30 sekund</button>
