@@ -29,7 +29,6 @@ function updateModelWeigths(duration){
     
     if(prediction == Infinity) return;
 
-    var sumWeights = 0;
     for(let i = 0; i <  NUM_OF_INPUTS; ++i){
         modelWeights[i] += LEARNING_RATE * (duration - prediction) * modelInputs[i];
         if(!modelWeights[i] || modelWeights[i] == null){
@@ -37,9 +36,8 @@ function updateModelWeigths(duration){
             console.log(prediction);
             console.log(modelInputs[i]);
         }
-        sumWeights += modelWeights[i];
     }
-    
+
     modelWeights[NUM_OF_INPUTS] += LEARNING_RATE * (duration - prediction); // bias
     
 }
@@ -176,9 +174,6 @@ function generateDigitSequence() {
             var digit = predictions[randomIndex].digit;
             digits[i] = digit;
         }
-        // for(let i = 0; i < DIGITS_IN_WORD; ++i){
-        //     digits[i] = 0;
-        // }
     }
 
     return digits;
