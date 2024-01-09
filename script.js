@@ -1,7 +1,7 @@
 const DIGITS_IN_WORD = 10;
 const MAX_NUMBER = 1e4;
 const NUM_OF_INPUTS = 4;
-var TIMER_DURATION_SECONDS = 60;
+var TIMER_DURATION_SECONDS = 120;
 var USER_INPUT = document.getElementById("userInput");
 var SEQUENCE = document.getElementById('sequence');
 var WPM_RESULT = document.getElementById('wpmResult');
@@ -23,18 +23,32 @@ var totalDigits = 0;
 
 
 function updateModelWeigths(duration){
-    const LEARNING_RATE = 0.2;
+    const LEARNING_RATE = 0.005;
     var modelInputs = calculateModelInputs(digitSequence, currentDigitIndex);
     var prediction = modelPredict(modelInputs);
     
     if(prediction == Infinity) return;
 
+    var sumWeights = 0;
     for(let i = 0; i <  NUM_OF_INPUTS; ++i){
-        modelWeights[i] += LEARNING_RATE * (duration - prediction) * modelInputs[i];
-        if(!modelWeights[i] || modelWeights[i] == null){
-            console.log(duration);
-            console.log(prediction);
-            console.log(modelInputs[i]);
+        if(modelInputs[i]){
+            modelWeights[i] += LEARNING_RATE * (duration - prediction) * modelInputs[i];
+            if(modelWeights[i] < 0) modelWeights[i] = 0;
+            if(modelWeights[i] > 1) modelWeights[i] = 1;
+            sumWeights += modelWeights[i];
+        }
+        
+        // console.log(duration);
+        // console.log(prediction);
+        // console.log(modelInputs[i]);
+        // console.log(modelWeights[i]);
+        // console.log('--------------');
+
+    }
+
+    if(sumWeights != 0){
+        for(let i = 0; i < NUM_OF_INPUTS; ++i){
+            modelWeights[i] /= sumWeights;
         }
     }
 
@@ -129,7 +143,7 @@ function modelPredict(modelInputs){
     }
     prediction += modelWeights[NUM_OF_INPUTS]; // bias
 
-    if(sumWeights > 0){
+    if(sumWeights != 0){
         prediction /= sumWeights; 
     }
     else{
@@ -222,6 +236,7 @@ function startTimer() {
                 saveStats();
                 saveModel();
             }
+            document.location.reload();
         }
     }, 1000);
 }
